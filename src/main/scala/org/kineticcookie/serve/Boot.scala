@@ -10,6 +10,8 @@ import ch.megard.akka.http.cors.CorsDirectives._
 import ch.megard.akka.http.cors.CorsSettings
 
 import scala.concurrent.duration._
+import scala.reflect.runtime.universe._
+
 import io.hydrosphere.mist.api.ml._
 import LocalPipelineModel._
 import MapAnyJson._
@@ -21,7 +23,16 @@ import SparkUtils._
   * Created by Bulat on 19.05.2017.
   */
 object Boot extends App {
-  def modelPath(modelName: String) = s"/models/$modelName"
+  def modelPath(modelName: String) = s"../models/$modelName"
+  def convertCollection[T: TypeTag](list: List[T]) = {
+    list match {
+      case value: List[Double @unchecked] =>
+        value.toArray
+      case value: List[Int @unchecked] =>
+        value.toArray
+      case e => throw new IllegalArgumentException(e.toString)
+    }
+  }
 
   implicit val system = ActorSystem("ml_server")
   implicit val materializer = ActorMaterializer()
@@ -31,6 +42,13 @@ object Boot extends App {
   val corsSettings = CorsSettings.defaultSettings
 
   val routes = cors(corsSettings) {
+    get {
+     path("health") {
+       complete {
+         "Hi"
+       }
+     }
+    }~
     post {
       path(Segment) { modelName =>
         import MapAnyJson._
@@ -45,11 +63,8 @@ object Boot extends App {
                   val colData = mapList.map { col =>
                     val data = col(colName)
                     data match {
-                      case value: List[Int] =>
-                        value.toArray
-                      case value: List[Double] =>
-                        value.toArray
-                      case v => v
+                      case l: List[Any] => convertCollection(l)
+                      case x => x
                     }
                   }
                   LocalDataColumn(colName, colData)

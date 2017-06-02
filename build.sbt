@@ -19,7 +19,7 @@ lazy val localMlServe = project.in(file("."))
     mainClass in assembly := Some("org.kineticcookie.serve.Boot")
   )
   .settings(
-    libraryDependencies += "io.hydrosphere" %% "mist-lib" % "0.1.1",
+    libraryDependencies += "io.hydrosphere" %% "mist-lib" % "0.1.3",
     libraryDependencies ++= sparkDependencies("2.1.0"),
     libraryDependencies ++= {
       val akkaV = "2.4.14"
@@ -40,6 +40,7 @@ lazy val localMlServe = project.in(file("."))
 lazy val commonAssemblySettings = Seq(
   mergeStrategy in assembly := {
     case m if m.toLowerCase.endsWith("manifest.mf") => MergeStrategy.discard
+    case PathList("META-INF", "services", "org.apache.hadoop.fs.FileSystem") => MergeStrategy.filterDistinctLines
     case m if m.startsWith("META-INF") => MergeStrategy.discard
     case PathList("javax", "servlet", xs@_*) => MergeStrategy.first
     case PathList("org", "apache", xs@_*) => MergeStrategy.first
